@@ -2,26 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
+
+
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  @apply
+  w-screen h-screen
+  ;
+
+  background:linear-gradient(45deg,#DB9065,#8D6B94)
+}
+
+
+
+input {
+@apply
+text-2xl
+;
+text-align: center;
+}
+
+input:focus {
+  outline: none;
+}
+
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+input[type='range'] {
+  -webkit-appearance: none;
+  background:transparent;
+  
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  @apply
+  h-2 w-full flex justify-center
+  rounded-full bg-persianOrange
+  ;
+  }
+
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  /* appearance: none; */
+  @apply
+  w-4 h-4 bg-pompPowder
+  rounded-full cursor-pointer
+  ;
+  margin:-4px;
 }

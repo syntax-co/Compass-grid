@@ -1,118 +1,306 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react"
+import Compass from "./components/compass";
+import SettingButton from "./components/setting-button";
+import Settings from "./components/settings";
+import { compress } from "../../next.config";
 
-const inter = Inter({ subsets: ['latin'] })
+
+
+
+
 
 export default function Home() {
+
+
+
+  // dimensions of full grid
+  const [dims,setDims] = useState([16,10])
+  // compass object data
+  const [compi,setCompi] = useState([]);
+  const _compi = useRef([]);
+
+
+  // compass size 
+  const [_size,setSize] = useState(0);
+  const [limit,setLimit] = useState(45);
+  const [duration,setDuration] = useState(3)
+  const [showSettings,setShowSettings] = useState(false);
+  const [mount,setMount] = useState(true);
+  const [time,setTime] = useState(5);
+  
+  // [compi,playing]
+  const flags = useRef([0,1,0,0]);
+  const timeout = useRef(null);
+  const maxTime = 5;
+
+
+  const updateValues = () => {
+
+    stopAnimation();
+    setShowSettings();
+    const values = document.querySelectorAll("#setting-input");
+
+    const newDims = [parseInt(values[0].value),parseInt(values[1].value)];
+    const newDuration = parseInt(values[2].value);
+    const newLimit = parseInt(values[3].value);
+    const newTime = parseInt(values[4].value); 
+
+    setMount(false);
+    changeFlag(2,1);
+
+    setTimeout(() => {
+
+      setDims(newDims);
+      setDuration(newDuration);
+
+      setTime(newTime)
+
+      if (newDuration>time) {
+        setDuration(time);
+      } else {
+        setDuration(newDuration);
+      }
+
+      if (newLimit == 0) {
+          setLimit(1);
+      } else {
+          setLimit(newLimit);
+      } 
+    }, 700);
+
+
+
+    setTimeout(() => {
+      changeFlag(3,1);
+      setMount(true);
+    }, 1000);
+
+  }
+
+
+  const changeFlag = (dex,newValue) => {
+
+    const clone = flags.current.splice(0);
+    clone[dex] = newValue;
+    flags.current = clone;
+  }
+
+
+  const checkRatio = () => {
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    var holder = [dims[0],dims[1]];
+
+    
+    
+    // if browser view
+    if (width>height) {
+      if (dims[0]<dims[1]) { 
+        holder = [dims[1],dims[0]]
+      }
+    } 
+    // if mobile view
+    else {
+      if (dims[1]<dims[0]) {
+        holder = [dims[1],dims[0]]
+      }
+    }
+
+    
+    setDims(holder);
+    return holder;
+  }
+
+
+  const generateMatrix = () => { 
+    const newDims = checkRatio();
+
+    const holder = [];
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    var size = height/newDims[1];
+
+    console.log(width,height,size,newDims);
+
+    if (size*newDims[0] >= width) {
+      size = width/newDims[0];
+    } 
+    
+    setSize(size);  
+  
+    // console.log(size);
+
+    for (var i=0; i<newDims[1]; i++) { 
+      const row = [];
+      for (var k=0; k<newDims[0]; k++) {
+
+        row.push(
+          {
+            size:size,
+            rotation:(Math.ceil(Math.random()*(360/limit))*limit ),
+            duration:(Math.random()+duration)
+          }
+        )
+      }
+
+      holder.push(row);
+    }
+
+    changeFlag(0,1);
+    _compi.current = holder;
+    setCompi(holder);
+  }
+
+
+
+  const randomize = () => {
+    // console.log('hit')
+    const compClone = _compi.current.splice(0);
+
+    
+
+    for (var i=0; i<compClone.length; i++) {
+      for (var k=0; k<compClone[0].length; k++) {
+        compClone[i][k].rotation = (Math.ceil(Math.random()*(360/limit))*limit );
+      }
+    }
+
+    changeFlag(0,1);
+    _compi.current = compClone; 
+    setCompi(compClone);
+  }
+
+
+  const startAnimation = () => {
+    flags.current[1] = 1;
+    
+    randomize();
+  }
+
+  const stopAnimation = () => {
+    flags.current[1] = 0;
+    clearTimeout(timeout.current);
+  }
+
+
+  
+  // using a binary array to hold
+  // flags to control these useEffects
+  // so that they only perfom when allowed
+
+
+  useEffect(() => {
+    if (mount && flags.current[3]) {
+      startAnimation();
+      changeFlag(3,0);
+    }
+  }, [mount]); 
+
+  useEffect(() => {
+    if (flags.current[2]) {
+      generateMatrix();
+      changeFlag(2,0)
+    }
+  }, [dims]);
+
+
+  useEffect(() => {
+
+    if (flags.current[0] && flags.current[1]) {
+      
+      timeout.current = setTimeout(() => {
+        // console.log('hit cycle')
+        randomize();
+      }, time*1000); 
+      
+      changeFlag(0,0);
+    }
+
+  }, [compi]);
+
+
+
+
+  useEffect(() => {
+    generateMatrix();
+
+    return () => {
+      if (timeout.current) {
+        clearTimeout(timeout.current); 
+      }
+    }
+  }, []);
+
+
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
+    <div className='h-screen w-full flex items-center justify-center relative'
+    style={{
+      
+    }}
     >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+
+      <SettingButton 
+      open={showSettings}
+      setOpen={setShowSettings}
+      />
+
+      <Settings
+      showing={showSettings}
+      setShowing={setShowSettings}
+      dims={dims}
+      setMount={setMount}
+      length={time}
+      duration={duration}
+      setDuration={setDuration}
+      limit={limit}
+      updateValues={updateValues}
+      />
+
+
+      {/* <div className="w-20 h-20 rounded-full bg-persianOrange z-40 
+       absolute top-0 right-0 m-3"
+      onClick={() => {
+        // randomize();
+      }}
+      >
+
+      </div> */}
+
+      <div className="grid place-items-center"
+      style={{
+        // width:_size * dims[0],
+        height:_size * dims[1],
+        gridTemplateColumns: `repeat(${dims[0]}, minmax(0,1fr))`,
+        gridTemplateRows: `repeat(${dims[1]}, minmax(0, 1fr))`,
+      }}
+      >
+
+        <AnimatePresence >
+          {
+            (compi&&mount) &&
+            compi.map(
+              (item,dex) => {
+                return item.map(
+                  (_item,_dex) => {
+                    return (
+                      <Compass key = {['compi',dex,_dex].join('-')}
+                      size={_item.size}
+                      rotation={_item.rotation}
+                      duration={_item.duration}
+                      />
+                    )
+                  }
+                )
+              }
+            )
+          }
+        </AnimatePresence>
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   )
 }
