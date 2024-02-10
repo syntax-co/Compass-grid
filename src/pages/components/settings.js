@@ -14,10 +14,10 @@ const Settings = ({
     updateValues}) => {
 
     // dims
-    const [value1,setValue1] = useState(dims);
-    const [value2,setValue2] = useState(duration);
-    const [value3,setValue3] = useState(limit);
-    const [value4,setValue4] = useState(length);
+    const [value1,setValue1] = useState(dims? dims:'');
+    const [value2,setValue2] = useState(duration? duration:'');
+    const [value3,setValue3] = useState(limit? limit:'');
+    const [value4,setValue4] = useState(length? length:'');
 
     const [mobile,setMobile] = useState(false);
     
